@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np
 
-"""directory_string = './Fantasy-Premier-League/data/20{0}-{1}/players/'
+directory_string = './Fantasy-Premier-League/data/20{0}-{1}/players/'
 players_data = {}
 player_names = set()
 players = {}
@@ -89,4 +89,43 @@ for season in range(0, 4):
     for week in range(0, 38):
         gameweek_data[season][week].to_csv('gw/{0}.csv'.format(38 * season + week + 1), index=False)
         
-print('Done collecting gameweek data!')"""
+print('Done collecting gameweek data!')
+
+df = pd.read_csv('gw/1.csv')
+
+import pulp
+
+all_players = { row.name : pulp.LpVariable(row.name, lowBound=0, upBound=1, cat="Integer") for row in df.itertuples() }
+
+goal_keepers = { row.name : all_players[row.name] for row in df.itertuples() if row.position == 1}
+
+defenders = { row.name : all_players[row.name] for row in df.itertuples() if row.position == 2}
+
+mid_fielders = { row.name : all_players[row.name] for row in df.itertuples() if row.position == 3}
+
+strikers = { row.name : all_players[row.name] for row in df.itertuples() if row.position == 4}
+
+model = pulp.LpProblem("Trying", pulp.LpMaximize)
+
+# Objective Function
+model += pulp.lpSum( [all_players[row.name] * row.total_points for row in df.itertuples()] )
+
+# 2 Goalkeepers, 5 defenders, 5 mid_fields, 5 strikers
+model += pulp.lpSum( [goal_keepers[name] for name in goal_keepers] ) == 2
+
+model += pulp.lpSum( [defenders[name] for name in defenders] ) == 5
+
+model += pulp.lpSum( [mid_fielders[name] for name in mid_fielders] ) == 5
+
+model += pulp.lpSum( [strikers[name] for name in strikers] ) == 3
+
+# Cost Cap
+model += pulp.lpSum( [all_players[row.name] * row.value for row in df.itertuples()] ) <= 1000
+
+# Team Constraints
+for team in df['team'].tolist():
+    team_members = { row.name : all_players[row.name] for row in df.itertuples() if int(row.team) == int(team)}
+
+    model += pulp.lpSum( [team_members[name] for name in team_members] ) <= 3
+
+model.solve()
