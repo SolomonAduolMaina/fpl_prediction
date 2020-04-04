@@ -4,10 +4,10 @@ import os
 import pandas as pd
 import numpy as np
 
-directory_string = './Fantasy-Premier-League/data/20{0}-{1}/players/'
+directory_string = './data/20{0}-{1}/players/'
 players_data = {}
-player_names = set()
 players = {}
+player_names = set()
 index_count = 0
 fields = ['assists', 'bonus', 'bps', 'clean_sheets', 'creativity', 'goals_conceded', 'goals_scored', 'ict_index', 'influence', 'minutes', 'opponent_team', 'own_goals', 'penalties_missed', 'penalties_saved', 'player', 'red_cards', 'round', 'saves', 'selected', 'team_a_score', 'team_h_score', 'threat',  'total_points', 'transfers_balance', 'transfers_in', 'transfers_out', 'value', 'was_home', 'yellow_cards', 'total_points']
 
@@ -36,7 +36,7 @@ for season in range(0, 4):
             players_data[name] = pd.concat([players_data[name], csv])
             
 
-players_data = { name : df for name, df.drop_duplicates(subset=['round'], keep='last') in players_data.items() if len(players_data[name]) > 1}
+players_data = { name : df.drop_duplicates(subset=['round'], keep='last') for (name,df)  in players_data.items() if len(players_data[name]) > 1}
 
 for name in players_data:
     players_data[name].to_csv('players/{0}.csv'.format(name), index=False)
@@ -48,11 +48,12 @@ player_mapping = pd.read_csv('name_conversions.csv', encoding = "UTF-8")
 for _, row in player_mapping.iterrows():
     name_mapping[row['bad_name']] = row['good_name']
 
-directory_string = './Fantasy-Premier-League/data/20{0}-{1}/'
-
 print('Done converting names!')
 
+directory_string = './data/20{0}-{1}/'
+
 positions_and_teams={}
+new_names = set()
 for season in range(0, 4):
     formatted_string = directory_string.format(season + 16, season + 16 + 1)
 
@@ -60,6 +61,7 @@ for season in range(0, 4):
     for _, row in csv.iterrows():
         name = row['first_name'] + ' ' + row['second_name']
         name = name_mapping[name] if name in name_mapping else name
+        new_names.add(name)
         
         position = row['element_type']
         team_id = row['team_code']
@@ -68,9 +70,10 @@ for season in range(0, 4):
             positions_and_teams[name] = (position, [None] * 4)
         positions_and_teams[name][1][season] = team_id
 
-print('Done collecting positions and teams')
+print('Done collecting positions and teams!')
 
-gameweek_data=[[pd.DataFrame(columns=['name', 'team', 'position', 'value', 'total_points']) for i in range(0, 38)] for i in range(0,4)]
+
+"""gameweek_data=[[pd.DataFrame(columns=['name', 'team', 'position', 'value', 'total_points']) for i in range(0, 38)] for i in range(0,4)]
 
 for name in players_data:
     for row in players_data[name].itertuples():
@@ -128,4 +131,4 @@ for team in df['team'].tolist():
 
     model += pulp.lpSum( [team_members[name] for name in team_members] ) <= 3
 
-model.solve()
+model.solve()"""
