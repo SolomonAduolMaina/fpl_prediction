@@ -34,7 +34,6 @@ for season in range(0, 4):
             players_data[name] = csv
         else:
             players_data[name] = pd.concat([players_data[name], csv])
-            
 
 players_data = { name : df.drop_duplicates(subset=['round'], keep='last') for (name,df)  in players_data.items() if len(players_data[name]) > 1}
 
@@ -72,8 +71,7 @@ for season in range(0, 4):
 
 print('Done collecting positions and teams!')
 
-
-"""gameweek_data=[[pd.DataFrame(columns=['name', 'team', 'position', 'value', 'total_points']) for i in range(0, 38)] for i in range(0,4)]
+gameweek_data=[[pd.DataFrame(columns=['name', 'team', 'position', 'value', 'total_points']) for i in range(0, 38)] for i in range(0,4)]
 
 for name in players_data:
     for row in players_data[name].itertuples():
@@ -131,4 +129,9 @@ for team in df['team'].tolist():
 
     model += pulp.lpSum( [team_members[name] for name in team_members] ) <= 3
 
-model.solve()"""
+model.solve()
+
+for name in all_players:
+    if all_players[name].varValue != 0:
+        print(name)
+print(pulp.value(model.objective))
