@@ -7,8 +7,8 @@ class GRUPredictor(torch.nn.Module):
   def __init__(self, embedding_dim, hidden_dim):
     super(GRUPredictor, self).__init__()
     self.hidden_dim = hidden_dim
-    self.gru = nn.GRU(embedding_dim, hidden_dim)
-    self.fc = nn.Linear(hidden_dim, 1)
+    self.gru = torch.nn.GRU(embedding_dim, hidden_dim)
+    self.fc = torch.nn.Linear(hidden_dim, 1)
 
   def forward(self, features, lengths):
     packed_features = torch.nn.utils.rnn.pack_padded_sequence(features, lengths, enforce_sorted=False)
