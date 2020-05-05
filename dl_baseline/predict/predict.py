@@ -1,22 +1,20 @@
 #!/bin/python3
 
 import torch
-from torch.utils.data import Dataset, DataLoader
 from functools import cmp_to_key
-from model import *
-from optimize import *
-from data import *
+from .model import *
+from .optimize import *
+from .data import *
 
 """
-Evaluates to (squad, candidates, captain, vice_captain) picked by model + optimization
-to play in season SEASON and round ROUND, assuming that the squad from last week is
-previous_squad, and saved_transfer is True if you have a saved transfer.
+Evaluates to (squad, candidates, captain, vice_captain, priorites) picked by model + optimization to play in season SEASON and round ROUND, assuming that the squad from last week is previous_squad, and saved_transfer is True if you have a saved transfer.
+penalty is the cost of substitutions used by the linear programming solver. If model is None then a new one is trained, otherwise it is loaded from save_path. You can also choose how many EPOCHS to train the model, see the training error relative to the epoch if log is True, and finally log the training curve using SummaryWriter if log_path is specified.
 """
-def predict(SEASON, ROUND, model=None, EPOCHS=100, previous_squad=[], saved_transfer=False, penalty=7, # Magic Number
-            log_path="", save_path="", log=False, save=False):
+def predict(SEASON, ROUND, model=None, EPOCHS=100, previous_squad=[], saved_transfer=False, penalty=7, log_path="", save_path="", log=False, save=False):
   HIDDEN_DIM, BATCH_SIZE, LR, EMBEDDING_DIM = 512, 512, 1e-3, len(FIELDS) - 1
   
   name_mapping = name_conversions()
+  device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
   
   if model is None:
     season, previous_week = (SEASON, ROUND - 1) if ROUND > 1 else (max([2016, SEASON - 1]), 38)
@@ -27,7 +25,7 @@ def predict(SEASON, ROUND, model=None, EPOCHS=100, previous_squad=[], saved_tran
     optimizer = torch.optim.Adam(model.parameters(), LR)
     criterion = torch.nn.SmoothL1Loss()
     train_dataloader = torch.utils.data.DataLoader(train_dataset, shuffle=True)
-    train_model(model, optimizer, criterion, train_dataloader, EPOCHS, log=log, save=save, log_path=log_path, save_path=save_path)
+    train_model(model, optimizer, criterion, train_dataloader, EPOCHS, device, log=log, save=save, log_path=log_path, save_path=save_path)
 
   ps_and_ts = positions_and_teams(SEASON, name_mapping)
   values = get_gameweek_data(SEASON, ROUND, ps_and_ts, name_mapping) # Are player values posted here before the deadline?

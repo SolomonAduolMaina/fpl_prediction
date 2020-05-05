@@ -1,12 +1,11 @@
 #!/bin/python3
 
 import torch
-from torch.utils.data import Dataset, DataLoader
 import pandas as pd
-import numpy as np
 import random
 import os
-from functools import cmp_to_key
+from sklearn import preprocessing
+
 
 
 FIELDS = ['assists', 'bonus', 'bps', 'clean_sheets', 'creativity', 'goals_conceded', 'goals_scored', 'ict_index', 'influence', 'minutes', 'opponent_team', 'own_goals', 'penalties_missed', 'penalties_saved', 'player', 'red_cards', 'round', 'saves', 'selected', 'team_a_score', 'team_h_score', 'threat',  'total_points', 'transfers_balance', 'transfers_in', 'transfers_out', 'value', 'was_home', 'yellow_cards']

@@ -16,7 +16,7 @@ class GRUPredictor(torch.nn.Module):
     return self.fc(hidden)
 
 
-def train_model(model, optimizer, criterion, train_dataloader, EPOCHS, log_path="", save_path="", save=False, log=False):
+def train_model(model, optimizer, criterion, train_dataloader, EPOCHS, device, log_path="", save_path="", save=False, log=False):
   if log:
     writer = SummaryWriter(log_path)
 

@@ -3,15 +3,10 @@
 import pulp
 
 """
-Evaluates to (name_mapping, fifteen) where fifteen is the the set of all linear programming variables. 
-optimized using predictions, assuming that last week's squad was previous_squad and
-saved_transfer is True if we have a saved transfer at this point. penalty will be optimized
-away. name_mapping maps the name of each linear programming variable to the player associated
-to that variable.
+Evaluates to (name_mapping, fifteen) where fifteen is the the set of all linear programming variables optimized using predictions, assuming that last week's squad was previous_squad and saved_transfer is True if we have a saved transfer at this point penalty is the cost of a substitution. name_mapping maps the name of each linear programming variable to the player associated to that variable.
 
 NOTE: We do not optimize for the eleven as this causes a maximum recursion depth error.
-I believe there are just too many variables if we solve for that. But the problems are reasonably
-similar.
+I believe there are just too many variables if we solve for that. But the problems are reasonably similar.
 """
 def optimize(predictions, previous_squad=[], saved_transfer=False, penalty=0):
   fifteen = { name : (pulp.LpVariable(name, lowBound=0, upBound=1, cat="Integer"), name) for name in predictions }
