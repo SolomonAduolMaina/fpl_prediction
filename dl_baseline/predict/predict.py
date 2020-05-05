@@ -10,29 +10,28 @@ from data import *
 """
 Evaluates to (squad, candidates, captain, vice_captain) picked by model + optimization
 to play in season SEASON and round ROUND, assuming that the squad from last week is
-previous_squad, the squad from two_weeks ago is previous_previous_squad, and saved_transfer is
-True if you have a saved transfer.
+previous_squad, and saved_transfer is True if you have a saved transfer.
 """
-def predict(SEASON, ROUND, model=None, previous_squad=[], saved_transer=False, penalty=0, log_path="", save_path="", log=False, save=False):
-  HIDDEN_DIM, BATCH_SIZE, EPOCHS, LR, EMBEDDING_DIM = 512, 512, 100, 1e-3, len(FIELDS) - 1
-
+def predict(SEASON, ROUND, model=None, EPOCHS=100, previous_squad=[], saved_transfer=False, penalty=7, # Magic Number
+            log_path="", save_path="", log=False, save=False):
+  HIDDEN_DIM, BATCH_SIZE, LR, EMBEDDING_DIM = 512, 512, 1e-3, len(FIELDS) - 1
+  
   name_mapping = name_conversions()
-  season, previous_week = (SEASON, ROUND - 1) if ROUND > 1 else (max([2016, SEASON - 1]), 38)
-  players_data = get_players_data(season, previous_week, name_mapping)
-  train_dataset = PlayerDataset(players_data, batch_size=BATCH_SIZE, embedding_dim=EMBEDDING_DIM)
-  train_dataloader = torch.utils.data.DataLoader(train_dataset, shuffle=True)
-
+  
   if model is None:
+    season, previous_week = (SEASON, ROUND - 1) if ROUND > 1 else (max([2016, SEASON - 1]), 38)
+    players_data = get_players_data(season, previous_week, name_mapping)
+    train_dataset = PlayerDataset(players_data, batch_size=BATCH_SIZE, embedding_dim=EMBEDDING_DIM)
+
     model = GRUPredictor(EMBEDDING_DIM, HIDDEN_DIM).to(device)
     optimizer = torch.optim.Adam(model.parameters(), LR)
-    criterion = nn.MSELoss()
-    log_path = '{0}/gru-{1}-{2}-{3}-{4}-{5}-{6}'.format(log_path, SEASON, ROUND, BATCH_SIZE, HIDDEN_DIM, EPOCHS, LR)
-    save_path = '{0}/gru-{1}-{2}-{3}-{4}-{5}-{6}.pt'.format(save_path, SEASON, ROUND, BATCH_SIZE, HIDDEN_DIM, EPOCHS, LR)
-    train_model(model, optimizer, criterion, train_dataloader, EPOCHS, log=lo, save=save, log_path=log_path, save_path=save_path)
+    criterion = torch.nn.SmoothL1Loss()
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, shuffle=True)
+    train_model(model, optimizer, criterion, train_dataloader, EPOCHS, log=log, save=save, log_path=log_path, save_path=save_path)
 
   ps_and_ts = positions_and_teams(SEASON, name_mapping)
   values = get_gameweek_data(SEASON, ROUND, ps_and_ts, name_mapping) # Are player values posted here before the deadline?
-  
+
   rankings = {}
   for name in ps_and_ts: # All players registered this season
     position, team = ps_and_ts[name]
@@ -47,7 +46,7 @@ def predict(SEASON, ROUND, model=None, previous_squad=[], saved_transer=False, p
     data = { 'team' : team, 'position' : position, 'value': value, 'total_points' : prediction }
     rankings[name] = data
 
-  (name_mapping, fifteen) = optimize(rankings, previous_squad, saved_transfer, penalty=penalty)
+  (name_mapping, fifteen) = optimize(rankings, previous_squad=previous_squad, saved_transfer=saved_transfer, penalty=penalty)
   (squad, candidates, captain, vice_captain) = pick_team(rankings, name_mapping, fifteen, ps_and_ts)
 
   priorities = {}
@@ -145,12 +144,7 @@ def compute_score(squad, candidates, captain, vice_captain, priorities,
   elif played(vice_captain, gameweek_data):
     points_earned += gameweek_data[vice_captain]['total_points']
 
-  if len(previous_squad) == 0:
-    return points_earned
-
-  num_transfers = len(set(previous_squad) - set(squad))
-  saved_transfer = (num_transfers == 0) or (num_transfers == 1 and saved_transfer)
-
+  num_transfers = 0 if len(previous_squad) == 0 else len(set(squad) - set(previous_squad))
   if num_transfers <= 1:
     return points_earned
   return points_earned - (4 * (num_transfers - (1 if saved_transfer else 0) - 1)) # -1 for free transfer

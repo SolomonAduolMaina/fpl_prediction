@@ -149,7 +149,7 @@ class PlayerDataset(torch.utils.data.Dataset):
     all_points = all_data.drop(all_data.columns.difference(['total_points']), axis=1).to_numpy()
 
     """Apparently no need to scale points since MSE is robust to scaling?"""
-    feature_scaler = preprocessing.RobustScaler()
+    feature_scaler = preprocessing.StandardScaler()
     scaled_features = feature_scaler.fit_transform(all_features)
 
     self.data = {}

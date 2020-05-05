@@ -2,11 +2,10 @@
 
 import pulp
 
-
 """
 Evaluates to (name_mapping, fifteen) where fifteen is the the set of all linear programming variables. 
 optimized using predictions, assuming that last week's squad was previous_squad and
-saved_transfer is True if we have a saved transfer at this point. cost will be optimized
+saved_transfer is True if we have a saved transfer at this point. penalty will be optimized
 away. name_mapping maps the name of each linear programming variable to the player associated
 to that variable.
 
@@ -40,11 +39,11 @@ def optimize(predictions, previous_squad=[], saved_transfer=False, penalty=0):
   # Maximize the squad score minus the transfer penalty. Can we do anything about the free transfer?
   model += pulp.lpSum( [fifteen[name][0] * predictions[name]['total_points'] for name in fifteen] ) \
           - (penalty * pulp.lpSum( [fifteen[name][0] * (1 if name not in previous_squad else 0) for name in predictions] )) \
-          + (penalty if saved_transfer else 0)
+          + ((2 if saved_transfer else 1) * penalty)
 
   model.solve()
 
   name_mapping = { variable.name : name for (variable, name) in fifteen.values() }
-  fifteen = [variable for (variable, _) in fifteen.values()]
+  fifteen = [ variable for (variable, _) in fifteen.values() ]
 
   return (name_mapping, fifteen)
