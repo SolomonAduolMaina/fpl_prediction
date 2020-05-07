@@ -14,13 +14,12 @@ def predict(SEASON, ROUND, model=None, EPOCHS=100, previous_squad=[], saved_tran
   HIDDEN_DIM, BATCH_SIZE, LR, EMBEDDING_DIM = 512, 512, 1e-3, len(FIELDS) - 1
   
   name_mapping = name_conversions()
+  season, previous_week = (SEASON, ROUND - 1) if ROUND > 1 else (max([2016, SEASON - 1]), 38)
+  players_data = get_players_data(season, previous_week, name_mapping)
+  train_dataset = PlayerDataset(players_data, batch_size=BATCH_SIZE, embedding_dim=EMBEDDING_DIM)
   device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
   
   if model is None:
-    season, previous_week = (SEASON, ROUND - 1) if ROUND > 1 else (max([2016, SEASON - 1]), 38)
-    players_data = get_players_data(season, previous_week, name_mapping)
-    train_dataset = PlayerDataset(players_data, batch_size=BATCH_SIZE, embedding_dim=EMBEDDING_DIM)
-
     model = GRUPredictor(EMBEDDING_DIM, HIDDEN_DIM).to(device)
     optimizer = torch.optim.Adam(model.parameters(), LR)
     criterion = torch.nn.SmoothL1Loss()
