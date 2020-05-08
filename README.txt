@@ -1,4 +1,5 @@
 #dl_baseline: code for the deep learning baseline
+#To run the code: run dl_baseline.ipynb
 
 #non_dl_baseline: code for the non-deep learning basline
 #To run the code: run each cell from top to bottom
